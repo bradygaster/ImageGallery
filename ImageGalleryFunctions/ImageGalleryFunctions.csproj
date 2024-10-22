@@ -5,21 +5,22 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <UserSecretsId>2bb24c68-1d0e-43ab-b696-3c64e99092b2</UserSecretsId>
+    <UserSecretsId>2e65ed58-8002-4d2e-8a1d-05f1697ae419</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Azure.Data.Tables" Version="12.9.1" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.22.2" />
-    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.20.1" />
-    <PackageReference Include="Azure.Storage.Queues" Version="12.20.1" />
+    <PackageReference Include="Azure.Data.Tables" Version="12.10.0-alpha.20241022.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0-beta.2" />
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.21.0-beta.2" />
+    <PackageReference Include="Azure.Storage.Queues" Version="12.21.0-beta.2" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.0.0-preview2" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0-preview2" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.0-preview2" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Blobs" Version="6.6.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.0-preview2" />
-    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.7.6" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.8.0-alpha.20241021.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0-rtm.24516.5" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ImageGallery.ServiceDefaults\ImageGallery.ServiceDefaults.csproj" />

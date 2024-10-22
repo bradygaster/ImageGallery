@@ -1,18 +1,18 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
-namespace ImageThumbnailGenerator
+namespace ImageGalleryFunctions
 {
-    public class GenerateThumbnail
+    public class Function1
     {
-        private readonly ILogger<GenerateThumbnail> _logger;
+        private readonly ILogger<Function1> _logger;
 
-        public GenerateThumbnail(ILogger<GenerateThumbnail> logger)
+        public Function1(ILogger<Function1> logger)
         {
             _logger = logger;
         }
 
-        [Function("GenerateThumbnail")]
+        [Function(nameof(Function1))]
         public async Task Run([BlobTrigger("images/{name}", Connection = "blobs")] Stream stream, string name)
         {
             using var blobStreamReader = new StreamReader(stream);

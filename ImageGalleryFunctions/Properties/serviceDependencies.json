@@ -8,7 +8,7 @@
     },
     "storage1": {
       "type": "storage",
-      "connectionId": "blobs",
+      "connectionId": "storage",
       "dynamicId": null
     }
   }

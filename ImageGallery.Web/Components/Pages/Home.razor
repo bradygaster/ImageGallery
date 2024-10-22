@@ -42,22 +42,13 @@
     {
         foreach (var file in e.GetMultipleFiles())
         {
-            // Validate the file type (MIME type should start with "image/")
             if (!file.ContentType.StartsWith("image/"))
             {
                 Console.WriteLine($"File {file.Name} is not a valid image.");
                 continue;
             }
 
-            // Limit file size (optional)
-            if (file.Size > 3 * 1024 * 1024) // 3 MB limit
-            {
-                // Handle file too large scenario
-                continue;
-            }
-
             var blobClient = blobContainerClient!.GetBlobClient(file.Name);
-
             using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, overwrite: true);
         }
