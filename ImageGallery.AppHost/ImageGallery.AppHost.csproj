@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ImageGallery.Web\ImageGallery.Web.csproj" />
+    <ProjectReference Include="..\ImageThumbnailGenerator\ImageThumbnailGenerator.csproj" />
   </ItemGroup>
 
 </Project>
