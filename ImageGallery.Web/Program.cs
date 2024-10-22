@@ -8,6 +8,9 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add Azure Storage Blobs
+builder.AddAzureBlobClient("blobs");
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();

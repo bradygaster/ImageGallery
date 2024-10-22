@@ -1,7 +1,67 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Azure.Storage.Blobs
+@inject BlobServiceClient blobServiceClient
 
-<PageTitle>Home</PageTitle>
+<InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
 
-<h1>Hello, world!</h1>
+<ul>
+    @foreach (var blobName in blobNames)
+    {
+        <li>@blobName</li>
+    }
+</ul>
 
-Welcome to your new app.
+@code {
+    private List<string> blobNames = new();
+    private BlobContainerClient? blobContainerClient;
+
+    private async Task InitializeBlobContainerClient()
+    {
+        blobContainerClient = blobServiceClient.GetBlobContainerClient("images");
+        await blobContainerClient.CreateIfNotExistsAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeBlobContainerClient();
+        await LoadBlobs();
+    }
+
+    private async Task LoadBlobs()
+    {
+        blobNames.Clear();
+        await foreach (var blobItem in blobContainerClient!.GetBlobsAsync())
+        {
+            blobNames.Add(blobItem.Name);
+        }
+        StateHasChanged();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            // Validate the file type (MIME type should start with "image/")
+            if (!file.ContentType.StartsWith("image/"))
+            {
+                Console.WriteLine($"File {file.Name} is not a valid image.");
+                continue;
+            }
+
+            // Limit file size (optional)
+            if (file.Size > 3 * 1024 * 1024) // 3 MB limit
+            {
+                // Handle file too large scenario
+                continue;
+            }
+
+            var blobClient = blobContainerClient!.GetBlobClient(file.Name);
+
+            using var stream = file.OpenReadStream();
+            await blobClient.UploadAsync(stream, overwrite: true);
+        }
+
+        await LoadBlobs();
+    }
+}
