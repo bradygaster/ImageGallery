@@ -2,66 +2,165 @@
 @rendermode InteractiveServer
 @using Azure.Storage.Blobs
 @inject BlobServiceClient blobServiceClient
+@inject QueueMessageHandler queueMessageHandler
+@implements IDisposable
 
-<InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
+<div class="row">
+    <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
+</div>
 
-<ul>
-    @foreach (var blobName in blobNames)
+<div class="row">
+    @foreach (var image in images)
     {
-        <li>@blobName</li>
+        <div class="col-md-2" style="margin-bottom: 10px;">
+            <a target="_blank" href="@image.ImageUrl">
+                <img src="@image.ThumbnailUrl" />
+            </a>
+        </div>
     }
-</ul>
+</div>
+
+@if (isDialogOpen)
+{
+    <div class="modal-overlay" @onclick="CloseDialog"></div>
+    <div class="modal" tabindex="-1" style="display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Message</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDialog" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>@dialogMessage</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="CloseDialog">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-    private List<string> blobNames = new();
-    private BlobContainerClient? blobContainerClient;
+    private List<ImageViewModel> images = new();
+    private BlobContainerClient? imageContainerClient;
+    private BlobContainerClient? thumbsContainerClient;
+    private bool isDialogOpen = false;
+    private string dialogMessage = string.Empty;
+
+    private void OpenDialog()
+    {
+        isDialogOpen = true;
+    }
+
+    private void CloseDialog()
+    {
+        isDialogOpen = false;
+    }
 
     private async Task InitializeBlobContainerClient()
     {
-        blobContainerClient = blobServiceClient.GetBlobContainerClient("images");
-        await blobContainerClient.CreateIfNotExistsAsync();
+        imageContainerClient = blobServiceClient.GetBlobContainerClient("images");
+        thumbsContainerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
+        await imageContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
+        await thumbsContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
     }
 
     protected override async Task OnInitializedAsync()
     {
         await InitializeBlobContainerClient();
         await LoadBlobs();
+        queueMessageHandler.MessageReceived += HandleMessageReceived;
+    }
+
+    public void Dispose()
+    {
+        queueMessageHandler.MessageReceived -= HandleMessageReceived;
+    }
+
+    private void HandleMessageReceived(object? sender, UploadResult args)
+    {
+        InvokeAsync(LoadBlobs);
     }
 
     private async Task LoadBlobs()
     {
-        blobNames.Clear();
-        await foreach (var blobItem in blobContainerClient!.GetBlobsAsync())
+        images.Clear();
+        await foreach (var blobItem in thumbsContainerClient!.GetBlobsAsync())
         {
-            blobNames.Add(blobItem.Name);
+            var imageBlobClient = imageContainerClient!.GetBlobClient(blobItem.Name);
+            var thumbBlobClient = thumbsContainerClient.GetBlobClient(blobItem.Name);
+
+            images.Add(new ImageViewModel
+                {
+                    ImageUrl = imageBlobClient.Uri.AbsoluteUri,
+                    ThumbnailUrl = thumbBlobClient.Uri.AbsoluteUri
+                });
+
         }
         StateHasChanged();
     }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
+        const long fileSizeLimit = 512000;
+
         foreach (var file in e.GetMultipleFiles())
         {
-            // Validate the file type (MIME type should start with "image/")
             if (!file.ContentType.StartsWith("image/"))
             {
-                Console.WriteLine($"File {file.Name} is not a valid image.");
+                dialogMessage = ($"File {file.Name} is not a valid image.");
+                OpenDialog();
                 continue;
             }
 
-            // Limit file size (optional)
-            if (file.Size > 3 * 1024 * 1024) // 3 MB limit
+            if (file.Size > fileSizeLimit)
             {
-                // Handle file too large scenario
+                dialogMessage = ($"File {file.Name} exceeds the size limit of {fileSizeLimit} bytes.");
+                OpenDialog();
                 continue;
             }
 
-            var blobClient = blobContainerClient!.GetBlobClient(file.Name);
-
+            var blobClient = imageContainerClient!.GetBlobClient(file.Name);
             using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, overwrite: true);
         }
 
         await LoadBlobs();
     }
+
+    public class ImageViewModel
+    {
+        public string? ImageUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
+    }
 }
+
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040; /* Adjust as needed to ensure it stays below the modal */
+    }
+
+    .modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1050; /* Ensure this is above the overlay */
+        background: white;
+        border-radius: 0.3rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        max-width: 500px;
+        max-height: 240px;
+    }
+
+    .modal-dialog {
+        margin: 0;
+    }
+</style>
