@@ -6,10 +6,12 @@ var queues = storage.AddQueues("queues");
 
 builder.AddProject<Projects.ImageGallery_Web>("imagegallery-web")
        .WithReference(queues)
-       .WithReference(blobs);
+       .WithReference(blobs)
+       .WaitFor(storage);
 
 builder.AddAzureFunctionsProject<Projects.ImageGalleryFunctions>("imagegalleryfunctions")
        .WithReference(queues)
-       .WithReference(blobs);
+       .WithReference(blobs)
+       .WaitFor(storage);
 
 builder.Build().Run();
