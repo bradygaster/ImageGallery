@@ -9,18 +9,10 @@ using System.Text.Json;
 
 namespace ImageGalleryFunctions;
 
-public class ThumbnailGenerator
+public class ThumbnailGenerator(ILogger<ThumbnailGenerator> logger,
+        QueueServiceClient queueServiceClient,
+        BlobServiceClient blobServiceClient)
 {
-    private readonly ILogger<ThumbnailGenerator> _logger;
-    private readonly QueueServiceClient queueServiceClient;
-
-    public ThumbnailGenerator(ILogger<ThumbnailGenerator> logger,
-        QueueServiceClient queueServiceClient)
-    {
-        _logger = logger;
-        this.queueServiceClient = queueServiceClient;
-    }
-
     public class UploadResult
     {
     }
@@ -31,8 +23,6 @@ public class ThumbnailGenerator
     {
         try
         {
-            var connectionString = Environment.GetEnvironmentVariable("blobs");
-            var blobServiceClient = new BlobServiceClient(connectionString);
             using var image = await Image.LoadAsync(stream);
 
             int maxHeight = 128;
@@ -58,7 +48,7 @@ public class ThumbnailGenerator
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Error generating thumbnail for image: {name}. Exception: {ex.Message}");
+            logger.LogError($"Error generating thumbnail for image: {name}. Exception: {ex.Message}");
         }
     }
 }
