@@ -13,7 +13,7 @@ builder.Services.AddRazorComponents()
 builder.AddAzureBlobClient("blobs");
 builder.AddAzureQueueClient("queues");
 builder.Services.AddSingleton<QueueMessageHandler>();
-builder.Services.AddHostedService<QueueWorker>();
+builder.Services.AddHostedService<StorageWorker>();
 
 var app = builder.Build();
 

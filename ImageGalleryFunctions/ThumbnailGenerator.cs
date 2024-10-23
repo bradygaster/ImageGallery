@@ -32,7 +32,6 @@ public class ThumbnailGenerator(ILogger<ThumbnailGenerator> logger,
 
             image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
             var containerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
-            await containerClient.CreateIfNotExistsAsync();
             var blobClient = containerClient.GetBlobClient(name);
 
             using var outputStream = new MemoryStream();
@@ -42,8 +41,6 @@ public class ThumbnailGenerator(ILogger<ThumbnailGenerator> logger,
             await blobClient.UploadAsync(outputStream, overwrite: true);
 
             var resultsQueueClient = queueServiceClient.GetQueueClient("thumbnailresults");
-            await resultsQueueClient.CreateIfNotExistsAsync();
-
             await resultsQueueClient.SendMessageAsync(JsonSerializer.Serialize(new UploadResult()));
         }
         catch (Exception ex)
