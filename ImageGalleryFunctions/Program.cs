@@ -5,6 +5,8 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+builder.AddAzureQueueClient("queues");
+
 builder.ConfigureFunctionsWebApplication();
 
 builder.Build().Run();

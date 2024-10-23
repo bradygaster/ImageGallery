@@ -1,3 +1,4 @@
+using ImageGallery.Web;
 using ImageGallery.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,8 +9,11 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add Azure Storage Blobs
+// Add Azure Storage
 builder.AddAzureBlobClient("blobs");
+builder.AddAzureQueueClient("queues");
+builder.Services.AddSingleton<QueueMessageHandler>();
+builder.Services.AddHostedService<QueueWorker>();
 
 var app = builder.Build();
 
@@ -19,15 +23,11 @@ app.MapDefaultEndpoints();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
-
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

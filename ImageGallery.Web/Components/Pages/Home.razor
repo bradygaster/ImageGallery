@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @using Azure.Storage.Blobs
 @inject BlobServiceClient blobServiceClient
+@inject QueueMessageHandler queueMessageHandler
+@implements IDisposable
 
 <div class="row">
     <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
@@ -68,6 +70,17 @@
     {
         await InitializeBlobContainerClient();
         await LoadBlobs();
+        queueMessageHandler.MessageReceived += HandleMessageReceived;
+    }
+
+    public void Dispose()
+    {
+        queueMessageHandler.MessageReceived -= HandleMessageReceived;
+    }
+
+    private void HandleMessageReceived(object? sender, UploadResult args)
+    {
+        InvokeAsync(LoadBlobs);
     }
 
     private async Task LoadBlobs()

@@ -1,23 +1,33 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
+using System.Text.Json;
 
 namespace ImageGalleryFunctions;
 
 public class ThumbnailGenerator
 {
     private readonly ILogger<ThumbnailGenerator> _logger;
+    private readonly QueueServiceClient queueServiceClient;
 
-    public ThumbnailGenerator(ILogger<ThumbnailGenerator> logger)
+    public ThumbnailGenerator(ILogger<ThumbnailGenerator> logger,
+        QueueServiceClient queueServiceClient)
     {
         _logger = logger;
+        this.queueServiceClient = queueServiceClient;
+    }
+
+    public class UploadResult
+    {
     }
 
     [Function("ThumbnailGenerator")]
-    public async Task Run([BlobTrigger("images/{name}", Connection = "blobs")] Stream stream, string name)
+    public async Task Run([BlobTrigger("images/{name}", Connection = "blobs")] Stream stream, 
+        string name)
     {
         try
         {
@@ -40,6 +50,11 @@ public class ThumbnailGenerator
             outputStream.Position = 0;
 
             await blobClient.UploadAsync(outputStream, overwrite: true);
+
+            var resultsQueueClient = queueServiceClient.GetQueueClient("thumbnailresults");
+            await resultsQueueClient.CreateIfNotExistsAsync();
+
+            await resultsQueueClient.SendMessageAsync(JsonSerializer.Serialize(new UploadResult()));
         }
         catch (Exception ex)
         {
