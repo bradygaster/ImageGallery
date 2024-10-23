@@ -8,10 +8,12 @@
 </div>
 
 <div class="row">
-    @foreach (var blobName in blobNames)
+    @foreach (var image in images)
     {
         <div class="col-md-2" style="margin-bottom: 10px;">
-            <img src="@blobName" />
+            <a target="_blank" href="@image.ImageUrl">
+                <img src="@image.ThumbnailUrl" />
+            </a>
         </div>
     }
 </div>
@@ -38,8 +40,8 @@
 }
 
 @code {
-    private List<string> blobNames = new();
-    private BlobContainerClient? blobContainerClient;
+    private List<ImageViewModel> images = new();
+    private BlobContainerClient? imageContainerClient;
     private BlobContainerClient? thumbsContainerClient;
     private bool isDialogOpen = false;
     private string dialogMessage = string.Empty;
@@ -56,9 +58,9 @@
 
     private async Task InitializeBlobContainerClient()
     {
-        blobContainerClient = blobServiceClient.GetBlobContainerClient("images");
+        imageContainerClient = blobServiceClient.GetBlobContainerClient("images");
         thumbsContainerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
-        await blobContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
+        await imageContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
         await thumbsContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
     }
 
@@ -70,11 +72,18 @@
 
     private async Task LoadBlobs()
     {
-        blobNames.Clear();
+        images.Clear();
         await foreach (var blobItem in thumbsContainerClient!.GetBlobsAsync())
         {
-            var blobClient = thumbsContainerClient.GetBlobClient(blobItem.Name);
-            blobNames.Add(blobClient.Uri.AbsoluteUri);
+            var imageBlobClient = imageContainerClient!.GetBlobClient(blobItem.Name);
+            var thumbBlobClient = thumbsContainerClient.GetBlobClient(blobItem.Name);
+
+            images.Add(new ImageViewModel
+                {
+                    ImageUrl = imageBlobClient.Uri.AbsoluteUri,
+                    ThumbnailUrl = thumbBlobClient.Uri.AbsoluteUri
+                });
+
         }
         StateHasChanged();
     }
@@ -99,7 +108,7 @@
                 continue;
             }
 
-            var blobClient = blobContainerClient!.GetBlobClient(file.Name);
+            var blobClient = imageContainerClient!.GetBlobClient(file.Name);
             using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, overwrite: true);
         }
@@ -107,6 +116,11 @@
         await LoadBlobs();
     }
 
+    public class ImageViewModel
+    {
+        public string? ImageUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
+    }
 }
 
 <style>
