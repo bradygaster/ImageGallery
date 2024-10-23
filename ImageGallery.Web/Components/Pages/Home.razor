@@ -5,7 +5,7 @@
 @implements IDisposable
 
 <div class="row">
-    <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" multiple/>
+    <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" multiple />
 </div>
 
 <div class="row">
@@ -47,6 +47,8 @@
     private bool isDialogOpen = false;
     private string dialogMessage = string.Empty;
 
+    private void HandleMessageReceived(object? sender, UploadResult args) => InvokeAsync(LoadBlobs);
+
     private void OpenDialog()
     {
         isDialogOpen = true;
@@ -73,11 +75,6 @@
     public void Dispose()
     {
         queueMessageHandler.MessageReceived -= HandleMessageReceived;
-    }
-
-    private void HandleMessageReceived(object? sender, UploadResult args)
-    {
-        InvokeAsync(LoadBlobs);
     }
 
     private async Task LoadBlobs()

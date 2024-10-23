@@ -30,7 +30,7 @@ public class StorageWorker(QueueServiceClient queueServiceClient,
             var message = await thumbnailResultsQueueClient.ReceiveMessageAsync(TimeSpan.FromSeconds(1), stoppingToken);
             if (message is not null && message.Value is not null)
             {
-                UploadResult? result = JsonSerializer.Deserialize<UploadResult>(message.Value.Body.ToString());
+                var result = JsonSerializer.Deserialize<UploadResult>(message.Value.Body.ToString());
                 if(result is not null)
                 {
                     handler.OnMessageReceived(result);
