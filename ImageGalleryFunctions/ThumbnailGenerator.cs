@@ -25,8 +25,10 @@ public class ThumbnailGenerator
             var blobServiceClient = new BlobServiceClient(connectionString);
             using var image = await Image.LoadAsync(stream);
 
-            int thumbnailWidth = 128;  
-            int thumbnailHeight = 128;
+            int maxHeight = 128;
+            var scale = (double)maxHeight / image.Height;
+            int thumbnailWidth = (int)(image.Width * scale);
+            int thumbnailHeight = (int)(image.Height * scale);
 
             image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
             var containerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
