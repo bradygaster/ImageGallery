@@ -1,23 +1,47 @@
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 
-namespace ImageGalleryFunctions
+namespace ImageGalleryFunctions;
+
+public class ThumbnailGenerator
 {
-    public class Function1
+    private readonly ILogger<ThumbnailGenerator> _logger;
+
+    public ThumbnailGenerator(ILogger<ThumbnailGenerator> logger)
     {
-        private readonly ILogger<Function1> _logger;
+        _logger = logger;
+    }
 
-        public Function1(ILogger<Function1> logger)
+    [Function("ThumbnailGenerator")]
+    public async Task Run([BlobTrigger("images/{name}", Connection = "blobs")] Stream stream, string name)
+    {
+        try
         {
-            _logger = logger;
+            var connectionString = Environment.GetEnvironmentVariable("blobs");
+            var blobServiceClient = new BlobServiceClient(connectionString);
+            using var image = await Image.LoadAsync(stream);
+
+            int thumbnailWidth = 128;  
+            int thumbnailHeight = 128;
+
+            image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
+            var containerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
+            await containerClient.CreateIfNotExistsAsync();
+            var blobClient = containerClient.GetBlobClient(name);
+
+            using var outputStream = new MemoryStream();
+            await image.SaveAsync(outputStream, new JpegEncoder());
+            outputStream.Position = 0;
+
+            await blobClient.UploadAsync(outputStream, overwrite: true);
         }
-
-        [Function(nameof(Function1))]
-        public async Task Run([BlobTrigger("images/{name}", Connection = "blobs")] Stream stream, string name)
+        catch (Exception ex)
         {
-            using var blobStreamReader = new StreamReader(stream);
-            var content = await blobStreamReader.ReadToEndAsync();
-            _logger.LogInformation($"C# Blob trigger function Processed blob\n Name: {name} \n Data: {content}");
+            _logger.LogError($"Error generating thumbnail for image: {name}. Exception: {ex.Message}");
         }
     }
 }

@@ -3,23 +3,30 @@
 @using Azure.Storage.Blobs
 @inject BlobServiceClient blobServiceClient
 
-<InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
+<div class="row">
+    <InputFile OnChange="HandleFileSelected" accept=".jpg,.jpeg,.png,.gif" />
+</div>
 
-<ul>
-    @foreach (var blobName in blobNames)
-    {
-        <li>@blobName</li>
-    }
-</ul>
+<div class="row">
+@foreach (var blobName in blobNames)
+{
+    <div class="col-md-1" style="margin-bottom: 10px;">
+        <img src="@blobName" class="img-thumbnail" />
+    </div>
+}
+</div>
 
 @code {
     private List<string> blobNames = new();
     private BlobContainerClient? blobContainerClient;
+    private BlobContainerClient? thumbsContainerClient;
 
     private async Task InitializeBlobContainerClient()
     {
         blobContainerClient = blobServiceClient.GetBlobContainerClient("images");
-        await blobContainerClient.CreateIfNotExistsAsync();
+        thumbsContainerClient = blobServiceClient.GetBlobContainerClient("thumbnails");
+        await blobContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
+        await thumbsContainerClient.CreateIfNotExistsAsync(publicAccessType: Azure.Storage.Blobs.Models.PublicAccessType.Blob);
     }
 
     protected override async Task OnInitializedAsync()
@@ -31,9 +38,10 @@
     private async Task LoadBlobs()
     {
         blobNames.Clear();
-        await foreach (var blobItem in blobContainerClient!.GetBlobsAsync())
+        await foreach (var blobItem in thumbsContainerClient!.GetBlobsAsync())
         {
-            blobNames.Add(blobItem.Name);
+            var blobClient = thumbsContainerClient.GetBlobClient(blobItem.Name);
+            blobNames.Add(blobClient.Uri.AbsoluteUri);
         }
         StateHasChanged();
     }
